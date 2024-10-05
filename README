@@ -1,17 +1,18 @@
-# throw
+# errors
 
 Minimal lib to wrap error with stacktrace. Works with std errors, slog packages.
+Drop-in replacement for standard errors package.
 
 example
 
     func foo() (error) {
-        return throw.Wrap1(os.Open("non-existing-file"))
+        return errors.Wrap1(os.Open("non-existing-file"))
     }
 
     func main() {
         slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
         err := foo()
-        slog.Error("something is wrong", throw.SlogAttr(foo()))
+        slog.Error("something is wrong", errors.Attr(foo()))
         slog.Info(fmt.Sprintf("this should print true: %v", errors.Is(err, os.ErrNotExist)))
     }
 
@@ -21,11 +22,11 @@ output
       "time": "2024-09-18T02:06:16.67056337+09:00",
       "level": "ERROR",
       "msg": "something is wrong",
-      "throw": {
+      "errors": {
         "error": "open non-existing-file: no such file or directory",
         "stack": [
-          "main.foo:/home/rok/src/github.com/xtdlib/throw/example/simple/main.go:13",
-          "main.main:/home/rok/src/github.com/xtdlib/throw/example/simple/main.go:19"
+          "main.foo:/home/rok/src/github.com/xtdlib/errors/example/simple/main.go:13",
+          "main.main:/home/rok/src/github.com/xtdlib/errors/example/simple/main.go:19"
         ]
       }
     }

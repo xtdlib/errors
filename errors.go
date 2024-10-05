@@ -1,8 +1,8 @@
-package throw
+package errors
 
 import (
 	"encoding/json"
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"log/slog"
 	"reflect"
@@ -15,6 +15,21 @@ const MaxDepth = 24
 type ThrowError struct {
 	err        error
 	stacktrace []string
+}
+
+var Is func(err, target error) bool = stderrors.Is
+var As func(err error, target any) bool = stderrors.As
+var Unwrap func(err error) error = stderrors.Unwrap
+var Join func(errs ...error) error = stderrors.Join
+
+func New(text string) error {
+	return Wrap(stderrors.New(text))
+}
+
+func As2[T error](err error) (T, bool) {
+	var t T
+	ok := As(err, &t)
+	return t, ok
 }
 
 func (m ThrowError) MarshalJSON() ([]byte, error) {
@@ -40,8 +55,8 @@ func Errorf(format string, args ...any) error {
 	return Wrap(fmt.Errorf(format, args...))
 }
 
-func SlogAttr(err error) slog.Attr {
-	return slog.Any("throw", Wrap(err))
+func Attr(err error) slog.Attr {
+	return slog.Any("errors", Wrap(err))
 }
 
 func Wrap(err error) error {
@@ -52,7 +67,7 @@ func Wrap(err error) error {
 	var terr ThrowError
 
 	// do not re-wrap
-	if errors.As(err, &terr) {
+	if stderrors.As(err, &terr) {
 		terr.err = err
 		return terr
 	}
@@ -65,7 +80,7 @@ func getStackTrace() []string {
 	length := runtime.Callers(3, stackBuffer[:])
 	stack := stackBuffer[:length]
 
-	throwList := make([]string, 0, MaxDepth)
+	errorsList := make([]string, 0, MaxDepth)
 	frames := runtime.CallersFrames(stack)
 	for {
 		frame, more := frames.Next()
@@ -81,14 +96,16 @@ func getStackTrace() []string {
 			continue
 		}
 
-		if strings.HasSuffix(frame.File, "/try/try.go") {
-			continue
-		}
+		// if strings.HasSuffix(frame.File, "/try/try.go") {
+		// 	continue
+		// }
 
-		// TODO: add lib to skip throw
-		throwList = append(throwList, fmt.Sprintf("%s:%s:%d", frame.Function, frame.File, frame.Line))
+		filename := strings.TrimPrefix(frame.File, goroot)
+
+		// TODO: add lib to skip errors
+		errorsList = append(errorsList, fmt.Sprintf("%s:%s:%d", frame.Function, filename, frame.Line))
 	}
-	return throwList
+	return errorsList
 }
 
 type fake struct{}
