@@ -1,4 +1,4 @@
-package trace
+package throw
 
 import (
 	"encoding/json"
@@ -12,12 +12,12 @@ import (
 
 const MaxDepth = 24
 
-type TraceError struct {
+type ThrowError struct {
 	err        error
 	stacktrace []string
 }
 
-func (m TraceError) MarshalJSON() ([]byte, error) {
+func (m ThrowError) MarshalJSON() ([]byte, error) {
 	v := struct {
 		Error      string   `json:"error"`
 		Stacktrace []string `json:"stack"`
@@ -28,11 +28,11 @@ func (m TraceError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (m TraceError) Error() string {
+func (m ThrowError) Error() string {
 	return m.err.Error()
 }
 
-func (m TraceError) Unwrap() error {
+func (m ThrowError) Unwrap() error {
 	return m.err
 }
 
@@ -41,7 +41,7 @@ func Errorf(format string, args ...any) error {
 }
 
 func SlogAttr(err error) slog.Attr {
-	return slog.Any("trace", Wrap(err))
+	return slog.Any("throw", Wrap(err))
 }
 
 func Wrap(err error) error {
@@ -49,7 +49,7 @@ func Wrap(err error) error {
 		return nil
 	}
 
-	var terr TraceError
+	var terr ThrowError
 
 	// do not re-wrap
 	if errors.As(err, &terr) {
@@ -57,7 +57,7 @@ func Wrap(err error) error {
 		return terr
 	}
 
-	return TraceError{err: err, stacktrace: getStackTrace()}
+	return ThrowError{err: err, stacktrace: getStackTrace()}
 }
 
 func getStackTrace() []string {
@@ -65,7 +65,7 @@ func getStackTrace() []string {
 	length := runtime.Callers(3, stackBuffer[:])
 	stack := stackBuffer[:length]
 
-	traceList := make([]string, 0, MaxDepth)
+	throwList := make([]string, 0, MaxDepth)
 	frames := runtime.CallersFrames(stack)
 	for {
 		frame, more := frames.Next()
@@ -87,10 +87,10 @@ func getStackTrace() []string {
 			continue
 		}
 
-		// TODO: add lib to skip trace
-		traceList = append(traceList, fmt.Sprintf("%s:%s:%d", frame.Function, frame.File, frame.Line))
+		// TODO: add lib to skip throw
+		throwList = append(throwList, fmt.Sprintf("%s:%s:%d", frame.Function, frame.File, frame.Line))
 	}
-	return traceList
+	return throwList
 }
 
 type fake struct{}
