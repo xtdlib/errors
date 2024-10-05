@@ -78,9 +78,7 @@ func getStackTrace() []string {
 		}
 
 		if strings.Contains(frame.File, packageName) {
-			if !strings.Contains(frame.File, packageName+"/example") {
-				continue
-			}
+			continue
 		}
 
 		if strings.HasSuffix(frame.File, "/try/try.go") {
