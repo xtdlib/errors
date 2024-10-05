@@ -11,9 +11,9 @@ example
 
     func main() {
         slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
         err := foo()
-        slog.Error("something is wrong", errors.Attr(foo()))
-        slog.Info(fmt.Sprintf("this should print true: %v", errors.Is(err, os.ErrNotExist)))
+        slog.Error("something is wrong", errors.Attr(err))
     }
 
 output 
@@ -29,9 +29,4 @@ output
           "main.main:/home/rok/src/github.com/xtdlib/errors/example/simple/main.go:19"
         ]
       }
-    }
-    {
-      "time": "2024-09-18T02:06:16.67070797+09:00",
-      "level": "INFO",
-      "msg": "this should print true: true"
     }
